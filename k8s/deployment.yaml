@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-forecast
+  namespace: ai-forecast
+  labels:
+    app: ai-forecast
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-forecast
+  template:
+    metadata:
+      labels:
+        app: ai-forecast
+    spec:
+      nodeName: desktop-control-plane
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: ai-forecast
+        image: localhost:5000/ai-forecast:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
