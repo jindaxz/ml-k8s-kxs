@@ -121,6 +121,15 @@ docker rm ai-forecast-mvp
 - ✅ **Multi-step Forecast**: `POST /forecast/{days}`
 - ✅ **API Documentation**: `/docs` (Swagger UI)
 
+### API Documentation (Swagger UI)
+
+![API Documentation](res/image.png)
+
+The service provides a complete OpenAPI/Swagger interface with:
+- **5 Endpoints**: Root, Health Check, Predict, Forecast, Train
+- **5 Schema Models**: Request/Response validation with Pydantic
+- **Interactive Testing**: Try out API calls directly from the browser
+
 ## 🛠 Tech Stack
 
 ### Current (MVP)
