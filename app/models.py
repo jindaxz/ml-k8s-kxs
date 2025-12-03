@@ -6,7 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class SimpleForecaster:
-    """简单的线性回归预测器"""
+    """Simple linear regression forecaster"""
 
     def __init__(self):
         self.model = LinearRegression()
@@ -16,7 +16,7 @@ class SimpleForecaster:
         return self.trained
 
     def train(self):
-        """使用示例数据训练模型"""
+        """Train model with sample data"""
         X = np.arange(100).reshape(-1, 1)
         y = 2 * X.flatten() + np.random.randn(100) * 5 + 10
 
@@ -25,7 +25,7 @@ class SimpleForecaster:
         logger.info("Model trained successfully")
 
     def predict_single(self, data: List[float]) -> float:
-        """单步预测"""
+        """Single-step prediction"""
         if not self.trained:
             self.train()
 
@@ -34,7 +34,7 @@ class SimpleForecaster:
         return float(prediction)
 
     def forecast_multi(self, data: List[float], steps: int) -> List[float]:
-        """多步预测"""
+        """Multi-step forecast"""
         if not self.trained:
             self.train()
 
