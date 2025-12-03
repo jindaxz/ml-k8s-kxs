@@ -4,9 +4,38 @@ Distributed AI forecasting system from local Kubernetes to AWS cloud
 
 ## 🎯 Project Status
 
+**V1.2 - Helm Chart Packaging** ✅ (2025-12-05)  
+Reusable Helm chart + scripts cover dev/prod values, packaging, and deployment automation.
+
 **V1.1 - Kubernetes Deployment** ✅ (2025-12-02)
 
 Service successfully deployed to Kubernetes using Docker Hub image. All core functionality validated.
+
+## 🧭 Architecture (ASCII)
+
+```
+Client / Tester (curl, browser)
+             |
+   HTTP 30080 (NodePort) or 8080 (port-forward)
+             |
+      +------v-------+
+      | K8s Service  |  ai-forecast (NodePort)
+      +------+-------+
+             |
+   targets pods with app=ai-forecast
+             |
+      +------v-------------------------+
+      | Deployment: ai-forecast        |
+      | - 1 Pod (FastAPI + Simple ML)  |
+      | - /health probes               |
+      +------+-------------------------+
+             |
+     pulls image jindaxz/ai-forecast:v1
+             |
+      +------v-------+
+      | Docker Image |  built via Dockerfile
+      +--------------+
+```
 
 ## 📁 Project Structure
 
@@ -16,6 +45,9 @@ k8s-kxs/
 │   ├── main.py           # FastAPI main application
 │   ├── models.py         # ML models
 │   └── schemas.py        # Data models
+├── helm/
+│   └── ai-forecast/      # Helm chart (+ dev/prod values, helpers, tests)
+├── docs/                 # Deployment notes and plans (see docs/v1.2-helm-chart-plan.md)
 ├── k8s/                  # Kubernetes resources
 │   ├── namespace.yaml
 │   ├── deployment.yaml
@@ -25,6 +57,8 @@ k8s-kxs/
 │   ├── docker-stop.sh   # Stop container
 │   ├── docker-logs.sh   # View logs
 │   └── docker-restart.sh # Restart container
+│   ├── helm-deploy-local.sh # Wrapper around helm upgrade --install
+│   └── helm-package.sh  # Package/push chart artifacts
 ├── tests/                # Tests
 ├── Dockerfile            # Container image
 ├── requirements.txt      # Python dependencies
@@ -40,8 +74,33 @@ k8s-kxs/
 - Python 3.9+
 - kubectl (Kubernetes CLI)
 - curl / jq (for testing)
+- Helm 3.12+ (for V1.2 chart workflow)
 
-### Deploy to Kubernetes (Current - V1.1)
+### Deploy with Helm (Current - V1.2)
+
+```bash
+# 1. Lint and dry-run render
+helm lint helm/ai-forecast
+helm template ai-forecast helm/ai-forecast
+
+# 2. Deploy to local cluster with dev profile
+./scripts/helm-deploy-local.sh
+
+# 3. (Optional) Deploy with production profile + overrides
+./scripts/helm-deploy-local.sh \
+  -f helm/ai-forecast/values.prod.yaml \
+  --set image.tag=v1.2.0
+
+# 4. Run Helm tests after rollout
+helm test ai-forecast -n ai-forecast
+
+# 5. Package (and optionally push) the chart
+./scripts/helm-package.sh --push oci://localhost:5000/helm
+```
+
+Key values live in `helm/ai-forecast/values.yaml` with environment-specific overrides in `values.dev.yaml` and `values.prod.yaml`. The helper script automatically sets namespace/release defaults; pass extra Helm flags directly if needed.
+
+### Deploy via Raw Manifests (Legacy - V1.1)
 
 ```bash
 # 1. Apply K8s resources
@@ -121,6 +180,62 @@ docker rm ai-forecast-mvp
 - ✅ **Multi-step Forecast**: `POST /forecast/{days}`
 - ✅ **API Documentation**: `/docs` (Swagger UI)
 
+### API Documentation
+
+The OpenAPI schema is still reachable at `/docs`, but the essential requests and responses are documented below for quick tests or runbooks.
+
+#### `GET /`
+- Returns a static welcome message confirming the API is available.
+- **Response**
+  ```json
+  {"message": "AI Forecast API"}
+  ```
+
+#### `GET /health`
+- Liveness/readiness endpoint used by Kubernetes probes.
+- **Response**
+  ```json
+  {"status": "ok"}
+  ```
+
+#### `POST /train`
+- Re-fits the LinearRegression model on an internal synthetic dataset.
+- **Response**
+  ```json
+  {"detail": "Model trained"}
+  ```
+
+#### `POST /predict`
+- Produces a single next-step prediction based on the latest data vector.
+- **Request**
+  ```json
+  {
+    "data": [10, 20, 30, 40, 50]
+  }
+  ```
+- **Response**
+  ```json
+  {
+    "prediction": 52.0
+  }
+  ```
+
+#### `POST /forecast/{days}`
+- Calculates a multi-step forecast for the supplied series.
+- **Path Parameter**: `days` (1–30) controls horizon length.
+- **Request**
+  ```json
+  {
+    "data": [10, 20, 30, 40, 50]
+  }
+  ```
+- **Response**
+  ```json
+  {
+    "forecast": [52.0, 54.0, 56.0]
+  }
+  ```
+
 ## 🛠 Tech Stack
 
 ### Current (MVP)
@@ -161,7 +276,7 @@ See [mvp-next-steps.md](docs/mvp-next-steps.md) for details
 
 ## 📚 Documentation
 
-- [Project Overview](docs/project.md) - Project background and goals (Chinese)
+- [Project Overview](docs/project.md) - Project background and goals
 - [Implementation Plan](docs/implementation-plan.md) - Complete technical implementation plan
 - [MVP Plan](docs/mvp-plan.md) - MVP detailed steps
 - [MVP Deployment Summary](docs/mvp-deployment-summary.md) - MVP completion status

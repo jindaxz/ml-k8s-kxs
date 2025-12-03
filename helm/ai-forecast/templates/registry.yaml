@@ -1,0 +1,52 @@
+{{- if .Values.registry.enabled }}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "ai-forecast.fullname" . }}-registry
+  namespace: {{ .Values.registry.namespace | default ( .Values.namespace.name | default .Release.Namespace ) }}
+  labels:
+    app.kubernetes.io/name: {{ include "ai-forecast.fullname" . }}-registry
+spec:
+  containers:
+    - name: registry
+      image: {{ .Values.registry.image }}
+      ports:
+        - containerPort: {{ .Values.registry.service.port }}
+          protocol: TCP
+      volumeMounts:
+        - name: registry-storage
+          mountPath: /var/lib/registry
+  volumes:
+    - name: registry-storage
+      {{- if eq .Values.registry.storage.type "emptyDir" }}
+      emptyDir:
+        {{- with .Values.registry.storage.size }}
+        sizeLimit: {{ . }}
+        {{- end }}
+      {{- else if eq .Values.registry.storage.type "persistentVolumeClaim" }}
+      persistentVolumeClaim:
+        claimName: {{ .Values.registry.storage.claimName }}
+      {{- else }}
+      emptyDir: {}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ai-forecast.fullname" . }}-registry
+  namespace: {{ .Values.registry.namespace | default ( .Values.namespace.name | default .Release.Namespace ) }}
+  labels:
+    app.kubernetes.io/name: {{ include "ai-forecast.fullname" . }}-registry
+spec:
+  type: {{ .Values.registry.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "ai-forecast.fullname" . }}-registry
+  ports:
+    - port: {{ .Values.registry.service.port }}
+      targetPort: {{ .Values.registry.service.port }}
+      protocol: TCP
+      {{- if and (eq .Values.registry.service.type "NodePort") .Values.registry.service.nodePort }}
+      nodePort: {{ .Values.registry.service.nodePort }}
+      {{- end }}
+{{- end }}

@@ -16,6 +16,14 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+echo -e "${BLUE}0. Validate Helm chart...${NC}"
+if ! command -v helm >/dev/null 2>&1; then
+  echo "Helm CLI is required for chart validation. Install Helm 3+." >&2
+  exit 1
+fi
+helm lint helm/ai-forecast
+echo ""
+
 echo -e "${BLUE}1. Check service health status...${NC}"
 curl -s $SERVICE_URL/health | jq '.'
 echo ""

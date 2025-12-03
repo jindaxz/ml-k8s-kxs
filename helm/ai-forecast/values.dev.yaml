@@ -1,0 +1,19 @@
+# Development overrides for Docker Desktop / kind
+replicaCount: 1
+
+image:
+  tag: v1
+
+# Namespace已经手动存在（k8s/legacy apply），默认不再创建
+namespace:
+  create: false
+service:
+  type: NodePort
+  nodePort: 30080
+
+env:
+  - name: LOG_LEVEL
+    value: DEBUG
+
+registry:
+  enabled: false
