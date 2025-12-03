@@ -4,9 +4,9 @@ Distributed AI forecasting system from local Kubernetes to AWS cloud
 
 ## 🎯 Project Status
 
-**MVP Completed** ✅ (2025-11-28)
+**V1.1 - Kubernetes Deployment** ✅ (2025-12-02)
 
-Core functionality validated, service running via Docker container.
+Service successfully deployed to Kubernetes using Docker Hub image. All core functionality validated.
 
 ## 📁 Project Structure
 
@@ -38,9 +38,31 @@ k8s-kxs/
 
 - Docker Desktop (with Kubernetes enabled)
 - Python 3.9+
+- kubectl (Kubernetes CLI)
 - curl / jq (for testing)
 
-### Run MVP
+### Deploy to Kubernetes (Current - V1.1)
+
+```bash
+# 1. Apply K8s resources
+kubectl apply -f k8s/
+
+# 2. Check deployment status
+kubectl get pods -n ai-forecast
+
+# 3. Port forward to access service (required for Docker Desktop)
+kubectl port-forward -n ai-forecast service/ai-forecast 8080:8000
+
+# 4. Test service (in another terminal)
+./test-mvp.sh
+
+# 5. Access API docs
+open http://localhost:8080/docs
+```
+
+### Run with Docker (Legacy - MVP)
+
+**For local development without Kubernetes:**
 
 **Method 1: Using Helper Scripts (Recommended)**
 
@@ -122,9 +144,8 @@ docker rm ai-forecast-mvp
 - [x] ML model implementation
 - [x] Docker containerization
 - [x] MVP functionality validation
-
-### 🚧 In Progress
-- [ ] K8s deployment (image distribution issue pending)
+- [x] Docker Hub image publishing
+- [x] Kubernetes deployment (V1.1)
 
 ### 📋 Planned
 - V1.1: K8s deployment refinement
@@ -144,6 +165,7 @@ See [mvp-next-steps.md](docs/mvp-next-steps.md) for details
 - [Implementation Plan](docs/implementation-plan.md) - Complete technical implementation plan
 - [MVP Plan](docs/mvp-plan.md) - MVP detailed steps
 - [MVP Deployment Summary](docs/mvp-deployment-summary.md) - MVP completion status
+- [K8s Deployment Complete](docs/k8s-deployment-complete.md) - V1.1 Kubernetes deployment guide ✅ NEW
 - [Next Steps](docs/mvp-next-steps.md) - Follow-up iteration plan
 
 ## 🔍 Known Issues & Troubleshooting
@@ -219,4 +241,5 @@ MIT License
 
 **Project Start Date**: 2025-11-28
 **MVP Completion Date**: 2025-11-28
-**Current Version**: v0.1.0 (MVP)
+**K8s Deployment Date**: 2025-12-02
+**Current Version**: v1.1 (Kubernetes)
