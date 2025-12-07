@@ -17,3 +17,12 @@ env:
 
 registry:
   enabled: false
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: ai-forecast.local
+      paths:
+        - path: /
+          pathType: Prefix

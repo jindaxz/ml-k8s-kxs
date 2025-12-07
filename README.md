@@ -14,27 +14,34 @@ Service successfully deployed to Kubernetes using Docker Hub image. All core fun
 ## 🧭 Architecture (ASCII)
 
 ```
-Client / Tester (curl, browser)
-             |
-   HTTP 30080 (NodePort) or 8080 (port-forward)
-             |
-      +------v-------+
-      | K8s Service  |  ai-forecast (NodePort)
-      +------+-------+
-             |
-   targets pods with app=ai-forecast
-             |
-      +------v-------------------------+
-      | Deployment: ai-forecast        |
-      | - 1 Pod (FastAPI + Simple ML)  |
-      | - /health probes               |
-      +------+-------------------------+
-             |
-     pulls image jindaxz/ai-forecast:v1
-             |
-      +------v-------+
-      | Docker Image |  built via Dockerfile
-      +--------------+
+                      +-------------------------+
+                      | Helm Chart (values.*)   |
+                      |  - templates/ deployment|
+                      |  - scripts/helm-*       |
+                      +-----------+-------------+
+                                  |
+                          helm upgrade/install
+                                  |
+Client / Tester (curl, browser)   v
+             |             +----------------------+
+ http://ai-forecast.local  | Ingress (nginx)      |
+  or NodePort/port-forward +----------+-----------+
+             |                        |
+             |             +----------v----------+
+             |             | K8s Service         |  ai-forecast (NodePort/ClusterIP)
+             |             +----------+----------+
+             |                        |
+   targets pods with       +----------v---------------------+
+   app=ai-forecast         | Deployment: ai-forecast        |
+             |             | - FastAPI + Simple ML model   |
+             |             | - /health probes + env        |
+             |             +------+-------------------------+
+             |                    |
+             |             pulls image (e.g. jindaxz/ai-forecast:v1.2)
+             |                    |
+      +------v-------+     +------v-------+
+      | Docker Build | --> | Container Img|
+      +--------------+     +--------------+
 ```
 
 ## 📁 Project Structure
@@ -47,11 +54,11 @@ k8s-kxs/
 │   └── schemas.py        # Data models
 ├── helm/
 │   └── ai-forecast/      # Helm chart (+ dev/prod values, helpers, tests)
-├── docs/                 # Deployment notes and plans (see docs/v1.2-helm-chart-plan.md)
 ├── k8s/                  # Kubernetes resources
 │   ├── namespace.yaml
 │   ├── deployment.yaml
-│   └── service.yaml
+│   ├── service.yaml
+│   └── ingress.yaml      # V1.3 Host 路由
 ├── scripts/              # Container management scripts
 │   ├── docker-run.sh    # Start/restart container
 │   ├── docker-stop.sh   # Stop container
@@ -118,6 +125,15 @@ kubectl port-forward -n ai-forecast service/ai-forecast 8080:8000
 # 5. Access API docs
 open http://localhost:8080/docs
 ```
+
+### Enable Ingress Access (V1.3)
+
+| Step | Command | Notes |
+|------|---------|-------|
+| 1 | `helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx`<br>`helm install ingress-nginx ingress-nginx/ingress-nginx` | Install nginx-ingress controller (listens on 80/443) |
+| 2 | `kubectl apply -f k8s/ingress.yaml`<br>or `./scripts/helm-deploy-local.sh --set ingress.enabled=true` | Helm dev profile enables Ingress by default; prod can override hosts/TLS via `values.prod.yaml` |
+| 3 | `echo "127.0.0.1 ai-forecast.local" | sudo tee -a /etc/hosts` | Windows: edit `C:\Windows\System32\drivers\etc\hosts`; kind/remote clusters should map to control-plane/LB IP |
+| 4 | `curl http://ai-forecast.local/health`<br>`open http://ai-forecast.local/docs` | No more `kubectl port-forward`; optionally `kubectl scale deployment ai-forecast --replicas=2 -n ai-forecast` to observe load balancing |
 
 ### Run with Docker (Legacy - MVP)
 

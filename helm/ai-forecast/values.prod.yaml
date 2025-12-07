@@ -23,3 +23,13 @@ resources:
 
 registry:
   enabled: false
+
+ingress:
+  enabled: false
+  className: nginx
+  hosts:
+    - host: forecast.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
