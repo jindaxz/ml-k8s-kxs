@@ -14,27 +14,30 @@ Service successfully deployed to Kubernetes using Docker Hub image. All core fun
 ## 🧭 Architecture (ASCII)
 
 ```
-Client / Tester (curl, browser)
-             |
-   HTTP 30080 (NodePort) or 8080 (port-forward)
-             |
-      +------v-------+
-      | K8s Service  |  ai-forecast (NodePort)
-      +------+-------+
-             |
-   targets pods with app=ai-forecast
-             |
-      +------v-------------------------+
-      | Deployment: ai-forecast        |
-      | - 1 Pod (FastAPI + Simple ML)  |
-      | - /health probes               |
-      +------+-------------------------+
-             |
-     pulls image jindaxz/ai-forecast:v1
-             |
-      +------v-------+
-      | Docker Image |  built via Dockerfile
-      +--------------+
+                      +-------------------------+
+                      | Helm Chart (values.*)   |
+                      |  - templates/ deployment|
+                      |  - scripts/helm-*       |
+                      +-----------+-------------+
+                                  |
+                          helm upgrade/install
+                                  |
+Client / Tester (curl, browser)   v
+             |             +------+-------+
+   HTTP 30080 (NodePort)   | K8s Service  |  ai-forecast (NodePort/ClusterIP)
+   or 8080 (port-forward)  +------+-------+
+             |                    |
+   targets pods with       +------v-------------------------+
+   app=ai-forecast         | Deployment: ai-forecast        |
+             |             | - FastAPI + Simple ML model   |
+             |             | - /health probes + env        |
+             |             +------+-------------------------+
+             |                    |
+             |             pulls image (e.g. jindaxz/ai-forecast:v1.2)
+             |                    |
+      +------v-------+     +------v-------+
+      | Docker Build | --> | Container Img|
+      +--------------+     +--------------+
 ```
 
 ## 📁 Project Structure
