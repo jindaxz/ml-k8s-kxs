@@ -1,0 +1,84 @@
+replicaCount: 1
+
+image:
+  repository: jindaxz/ai-forecast
+  tag: v1
+  pullPolicy: Always
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: NodePort
+  port: 8000
+  targetPort: 8000
+  nodePort: 30080
+
+containerPort: 8000
+
+resources:
+  requests:
+    memory: 128Mi
+    cpu: 100m
+  limits:
+    memory: 256Mi
+    cpu: 500m
+
+env:
+  - name: LOG_LEVEL
+    value: INFO
+
+probes:
+  liveness:
+    path: /health
+    port: http
+    initialDelaySeconds: 10
+    periodSeconds: 30
+  readiness:
+    path: /health
+    port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+namespace:
+  create: false
+  name: ai-forecast
+  labels:
+    name: ai-forecast
+
+registry:
+  enabled: false
+  namespace: kube-system
+  image: registry:2
+  service:
+    type: NodePort
+    port: 5000
+    nodePort: 30500
+  storage:
+    type: emptyDir
+    size: ""

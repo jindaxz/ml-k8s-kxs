@@ -1,0 +1,12 @@
+# Patterns to ignore when packaging
+.DS_Store
+# Common VCS dirs
+.git/
+.gitignore
+
+# IDE files
+.vscode/
+.idea/
+
+# Tests
+*.tgz
