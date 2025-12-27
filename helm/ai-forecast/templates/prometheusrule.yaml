@@ -1,0 +1,85 @@
+{{- if .Values.metrics.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "ai-forecast.fullname" . }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "ai-forecast.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: ai-forecast.rules
+      interval: 30s
+      rules:
+        # 高错误率告警
+        - alert: HighErrorRate
+          expr: |
+            (
+              sum(rate(http_requests_total{job="ai-forecast",status=~"5.."}[5m]))
+              /
+              sum(rate(http_requests_total{job="ai-forecast"}[5m]))
+            ) > 0.05
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High error rate detected"
+            description: "Error rate is {{`{{ $value | humanizePercentage }}`}} (threshold: 5%)"
+
+        # 高延迟告警
+        - alert: HighLatency
+          expr: |
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket{job="ai-forecast"}[5m])) by (le)
+            ) > 1.0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High latency detected"
+            description: "P95 latency is {{`{{ $value }}`}}s (threshold: 1s)"
+
+        # 服务不可用告警
+        - alert: ServiceDown
+          expr: up{job="ai-forecast"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Service is down"
+            description: "AI Forecast service has been down for more than 2 minutes"
+
+        # 模型未就绪告警
+        - alert: ModelNotReady
+          expr: ai_forecast_model_ready == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "ML model is not ready"
+            description: "ML model has not been initialized or trained"
+
+        # 高内存使用告警
+        - alert: HighMemoryUsage
+          expr: |
+            container_memory_usage_bytes{pod=~"ai-forecast-.*"}
+            /
+            container_spec_memory_limit_bytes{pod=~"ai-forecast-.*"} > 0.85
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High memory usage"
+            description: "Memory usage is {{`{{ $value | humanizePercentage }}`}}"
+
+        # 高 CPU 使用告警
+        - alert: HighCPUUsage
+          expr: |
+            rate(container_cpu_usage_seconds_total{pod=~"ai-forecast-.*"}[5m]) > 0.8
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU usage"
+            description: "CPU usage is {{`{{ $value | humanizePercentage }}`}}"
+{{- end }}

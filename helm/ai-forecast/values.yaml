@@ -93,3 +93,15 @@ registry:
   storage:
     type: emptyDir
     size: ""
+
+# Monitoring configuration
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 15s
+    scrapeTimeout: 10s
+    labels:
+      prometheus: kube-prometheus
+  prometheusRule:
+    enabled: true
